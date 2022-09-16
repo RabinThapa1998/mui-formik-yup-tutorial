@@ -6,12 +6,22 @@ import {
   Button,
   TextField,
   InputLabel,
+  CircularProgress,
 } from "@mui/material";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import "./App.css";
 import { stackStyle } from "./stylefile";
 import { Formik } from "formik";
 import { object, string, number, date, InferType } from "yup";
+import axios from "axios";
+import { api_url } from "./config/config";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 interface initialProps {
   first_name: string;
   language: string;
@@ -19,12 +29,29 @@ interface initialProps {
   email: string;
 }
 function App() {
-  const initialValues: initialProps = {
+  const init: initialProps = {
     first_name: "",
     language: "",
     age: "",
     email: "",
   };
+  const [initialValues, setInitialValues] = useState<initialProps>(init);
+  function getter() {
+    return axios({
+      url: api_url,
+      method: "GET",
+    });
+  }
+  const { data, isLoading, error, isError } = useQuery(["submit"], getter, {
+    refetchOnWindowFocus: false,
+    onSuccess: (api) => {
+      setInitialValues(api.data);
+    },
+  });
+
+  // useEffect(() => {
+  //   getter();
+  // }, []);
 
   let userSchema = object({
     first_name: string().required(),
@@ -53,6 +80,7 @@ function App() {
 
   return (
     <Box className="App" maxWidth="1160px" mx="auto" border={1} height="100vh">
+      {isLoading && <CircularProgress />}
       <Typography variant="h3">MUI + FORMIK + YUP</Typography>
       <Typography
         variant="h4"
@@ -61,10 +89,17 @@ function App() {
         Student Profile
       </Typography>
 
-      {/* <Formik
+      <Formik
         initialValues={initialValues}
         validationSchema={userSchema}
-        onSubmit={(values) => console.log("submitted")}
+        validateOnMount={false}
+        enableReinitialize
+        onSubmit={async (values) => {
+          const res = await axios.post(
+            "https://submit.free.beeceptor.com/api/submit",
+            values
+          );
+        }}
       >
         {({
           values,
@@ -75,8 +110,8 @@ function App() {
           handleSubmit,
           isSubmitting,
         }) => {
-          console.log("🚀 ~ file: App.tsx ~ line 55 ~ App ~ touched", touched);
-          console.log("🚀 ~ file: App.tsx ~ line 45 ~ App ~ errors", errors);
+          // console.log("🚀 ~ file: App.tsx ~ line 55 ~ App ~ touched", touched);
+          // console.log("🚀 ~ file: App.tsx ~ line 45 ~ App ~ errors", errors);
           return (
             <Grid container component="form" onSubmit={handleSubmit}>
               <Grid xs={6}>
@@ -91,9 +126,12 @@ function App() {
                     id="first_name"
                     name={"first_name"}
                     sx={{ width: "550px" }}
+                    value={values.first_name}
                     onChange={handleChange}
-                    error={errors.first_name ? true : false}
-                    helperText={errors.first_name}
+                    error={
+                      touched.first_name && errors.first_name ? true : false
+                    }
+                    helperText={touched.first_name && errors.first_name}
                   ></TextField>
                 </Stack>
               </Grid>
@@ -108,10 +146,11 @@ function App() {
                   <TextField
                     id="language"
                     name={"language"}
+                    value={values.language}
                     sx={{ width: "550px" }}
                     onChange={handleChange}
-                    error={errors.language ? true : false}
-                    helperText={errors.language}
+                    error={touched.language && errors.language ? true : false}
+                    helperText={touched.language && errors.language}
                   ></TextField>
                 </Stack>
               </Grid>
@@ -123,10 +162,11 @@ function App() {
                   <TextField
                     id="age"
                     name="age"
+                    value={values.age}
                     sx={{ width: "550px" }}
                     onChange={handleChange}
-                    error={errors.age ? true : false}
-                    helperText={errors.age}
+                    error={touched.age && errors.age ? true : false}
+                    helperText={touched.age && errors.age}
                   ></TextField>
                 </Stack>
               </Grid>
@@ -141,42 +181,42 @@ function App() {
                   <TextField
                     name="email"
                     id="email"
+                    value={values.email}
                     sx={{ width: "550px" }}
                     placeholder="enter your email"
                     onChange={handleChange}
-                    error={errors.email ? true : false}
-                    helperText={errors.email}
+                    error={touched.email && errors.email ? true : false}
+                    helperText={touched.email && errors.email}
                   ></TextField>
                 </Stack>
               </Grid>
               <Button type="submit" variant="contained">
-                {" "}
                 SUBMIT
               </Button>
             </Grid>
           );
         }}
-      </Formik> */}
-
-      <Grid container>
-        {fields.map((item) => (
-          <Grid xs={6}>
-            <Stack direction={"column"}>
-              <InputLabel sx={{ textAlign: "start", my: 1 }} htmlFor="email">
-                {item.label}
-              </InputLabel>
-              <TextField
-                name={item.name}
-                id={item.name}
-                select={item.type === "select"}
-                sx={{ width: "550px" }}
-              ></TextField>
-            </Stack>
-          </Grid>
-        ))}
-      </Grid>
+      </Formik>
     </Box>
   );
 }
 
 export default App;
+
+// <Grid container>
+//   {fields.map((item) => (
+//     <Grid xs={6}>
+//       <Stack direction={"column"}>
+//         <InputLabel sx={{ textAlign: "start", my: 1 }} htmlFor="email">
+//           {item.label}
+//         </InputLabel>
+//         <TextField
+//           name={item.name}
+//           id={item.name}
+//           select={item.type === "select"}
+//           sx={{ width: "550px" }}
+//         ></TextField>
+//       </Stack>
+//     </Grid>
+//   ))}
+// </Grid>
